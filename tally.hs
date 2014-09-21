@@ -3,6 +3,8 @@ import Data.List (groupBy)
 type Distribution a = [(a, Double)]
 
 data Die = FairDie Int
+instance Eq Die where
+    (FairDie a) == (FairDie b) = a == b
 
 regroup :: Eq a => Distribution a -> Distribution a
 regroup xs =
@@ -23,7 +25,8 @@ equally xs =
 
 --weighted :: [(a, Double)] -> Distribution a
 
---probabilityOf :: Distribution a -> a -> Double
+probabilityOf :: Eq a => a -> Distribution a -> Double
+probabilityOf elem dist = snd $ head $ filter (((==) elem) . fst) dist
 
 pmap :: Eq b => (a -> b) -> Distribution a -> Distribution b
 pmap f xs =
@@ -41,26 +44,45 @@ bindx xs distributionMap =
 
 --liftp2 :: (a -> b -> c) -> Distribution a -> Distribution b -> Distribution c
 
---drawABfromXwithReplacement :: a -> a -> Distribution a -> double
---drawABfromXwithReplacement a, b, x =
----- The 2 comes from the fact that there are 2 ways, of equal likelihood, to draw an a and a b.
---    (if a == b then 1 else 2) *
---    (probabilityOf a x) * (probabilityOf b x)
+-- The 2 comes from the fact that there are 2 ways, of equal likelihood, to draw an a and a b.
+drawABfromXwithReplacement :: Eq a => a -> a -> Distribution a -> Double
+drawABfromXwithReplacement a b x =
+    (if a == b then 1 else 2) * (probabilityOf a x) * (probabilityOf b x)
 
---die :: Int -> Die
---sides :: Die -> Int
---dieDistribution :: Die -> Distribution Int
+die :: Int -> Die
+die = FairDie
 
---bagDistribution :: Distribution Die
+sides :: Die -> Int
+sides (FairDie n) = n
 
---probabilityOf11 =
---    let d6 = dieDistribution die 6
---        d12 = dieDistribution die 12
---        bothDie = bindx d6 (\_ -> d12)
---        distribution = pmap (uncurry (+)) bothDie
---        isEleven = pmap (==11) distribution
---    in
---        probabilityOf isEleven True
+dieDistribution :: Die -> Distribution Int
+dieDistribution (FairDie n) = equally [1..n]
+
+bagDistribution :: Distribution Die
+bagDistribution =
+    let d4 = die 4
+        d6 = die 6
+        d10 = die 10
+        d12 = die 12
+        d20 = die 20
+    in
+        equally
+            [ d4
+            , d6
+            , d10
+            , d12
+            , d20
+            ]
+
+probabilityOf11 =
+    let d6 = dieDistribution $ die 6
+        d12 = dieDistribution $ die 12
+        -- [((Int,Int),Double)]
+        bothDie = bindx d6 (\_ -> d12)
+        distribution = pmap (uncurry (+)) bothDie
+        isEleven = pmap (==11) distribution
+    in
+        probabilityOf isEleven True
 
 --probabilityOfD6D12 =
 --    let drawDie n = pmap ((== n) . sides) bagDistribution
