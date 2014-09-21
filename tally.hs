@@ -1,8 +1,8 @@
 import Data.List (groupBy)
 
-type Distribution a = [(a, Double)]
-
 data Die = FairDie Int
+
+type Distribution a = [(a, Double)]
 instance Eq Die where
     (FairDie a) == (FairDie b) = a == b
 
@@ -33,6 +33,19 @@ probabilityOf elem dist =
             (_,p) : xs -> p
             _ -> 0
 
+probabilityGiven :: (Eq a, Eq b) => a -> b -> Distribution (a, b) -> Double
+probabilityGiven elem given dist =
+    let givenDistribution = pfilter (\(_,g) -> g == given) dist
+    in
+        probabilityOf (elem, given) givenDistribution
+
+pfilter :: (a -> Bool) -> Distribution a -> Distribution a
+pfilter pred dist =
+    let xs = filter ( pred . fst ) dist
+        totalProbability = foldr (\(_,p) acc -> acc + p) 0 xs
+    in
+        map (\(x,p) -> (x, p / totalProbability)) xs
+
 pmap :: Eq b => (a -> b) -> Distribution a -> Distribution b
 pmap f xs =
     let xs' = map (\(a,b) -> (f a, b)) xs
@@ -50,9 +63,9 @@ bindx xs f =
 --liftp2 :: (a -> b -> c) -> Distribution a -> Distribution b -> Distribution c
 
 -- The 2 comes from the fact that there are 2 ways, of equal likelihood, to draw an a and a b.
-drawABfromXwithReplacement :: Eq a => a -> a -> Distribution a -> Double
-drawABfromXwithReplacement a b x =
-    (if a == b then 1 else 2) * (probabilityOf a x) * (probabilityOf b x)
+--drawABfromXwithReplacement :: Eq a => a -> a -> Distribution a -> Double
+--drawABfromXwithReplacement a b x =
+    --(if a == b then 1 else 2) * (probabilityOf a x) * (probabilityOf b x)
 
 die :: Int -> Die
 die = FairDie
@@ -79,29 +92,35 @@ bagDistribution =
             , d20
             ]
 
-probabilityOf11 =
-    let d6 = dieDistribution $ die 6
-        d12 = dieDistribution $ die 12
+sum11 d1 d2 =
+    let d6 = dieDistribution $ die d1
+        d12 = dieDistribution $ die d2
         bothDie = bindx d6 (\_ -> d12)
         distribution = pmap (uncurry (+)) bothDie
-        isEleven = pmap (==11) distribution
     in
-        probabilityOf True isEleven
+        pmap (==11) distribution
 
-probabilityOfD6D12 =
+d6D12 =
     let drawDie n = pmap ((== n) . sides) bagDistribution
         drawD6 = drawDie 6 -- Distribution Bool
         drawD12 = drawDie 12
-        drawBoth = bindx drawD6 (\d -> pmap ((&&) d) drawD12)
     in
-        probabilityOf (True,True) drawBoth
+        bindx drawD6 (\d -> pmap ((&&) d) drawD12)
+
+d6D12Sum11 = bindx d6D12 (\_ -> sum11 6 12)
+
+sum11ConditionalD6D12 =
+    let twoDie = bindx bagDistribution (\_ -> bagDistribution) -- Distribution (Die, Die)
+    in
+        bindx twoDie (\(d1,d2) -> sum11 (sides d1) (sides d2)) -- Distribution ((Die, Die),Bool)
+
 
 answer :: Show a => String -> a -> IO ()
 answer number ans = putStrLn $ number ++ ": " ++ show ans
 
 main :: IO ()
 main = do
-    answer "B" probabilityOf11
-    answer "C1a" probabilityOfD6D12
-    answer "C1b" $ drawABfromXwithReplacement (die 6) (die 12) bagDistribution
-    answer "probD6" $ probabilityOf (die 6) bagDistribution
+    answer "B" $ probabilityOf True (sum11 6 12)
+    answer "C" $ probabilityOf (True,True) d6D12
+    answer "D" $ probabilityOf ((True, True), True) d6D12Sum11
+    answer "E" $ probabilityGiven (die 4, die 4) True sum11ConditionalD6D12
