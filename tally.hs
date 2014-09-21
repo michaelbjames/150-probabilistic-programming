@@ -1,11 +1,9 @@
+import Prelude hiding (Either,Right,Left)
 import Data.List (groupBy)
 
 type Distribution a = [(a, Double)]
 data Die = FairDie Int deriving (Show, Eq)
 data Col = Left | Right deriving (Show, Eq)
-
---data Distribution a = P [(a, Double)] deriving (Show, Eq)
-
 
 regroup :: Eq a => Distribution a -> Distribution a
 regroup xs =
@@ -53,13 +51,20 @@ pmap f xs =
     in
         regroup xs'
 
-bindx :: Distribution a -> (a -> Distribution b) -> Distribution (a,b)
+bindx :: (Eq a, Eq b) => Distribution a -> (a -> Distribution b) -> Distribution (a,b)
 bindx xs f =
     let combineDistribution (a,ap) (b,bp) = ((a,b), ap * bp)
         bind' (a, ap) = map (combineDistribution (a, ap)) $ f a
         allDistributions = map bind' xs 
     in
-        foldr (++) [] allDistributions
+        regroup $ foldr (++) [] allDistributions
+
+independent :: Eq a => Distribution a -> Distribution [a] -> Distribution [a]
+independent a bs = pmap (\(bs',a') -> a':bs') $ bindx bs (const a)
+
+
+preturn :: Eq a => a -> Distribution a
+preturn x = equally [x]
 
 die :: Int -> Die
 die = FairDie
@@ -81,18 +86,25 @@ bagDistribution =
         equally
             [ d4
             , d6
-            , d10
-            , d12
-            , d20
+            --, d10
+            --, d12
+            --, d20
             ]
 
 sum11 d1 d2 =
     let dieA = dieDistribution $ die d1
         dieB = dieDistribution $ die d2
-        bothDie = bindx dieA (\_ -> dieB)
+        bothDie = bindx dieA (const dieB)
         distribution = pmap (uncurry (+)) bothDie
     in
         pmap (==11) distribution
+
+sumDie :: Die -> Die -> (Int -> Bool) -> Distribution Bool
+sumDie d1 d2 predicate =
+    let bothDie = bindx (dieDistribution d1) (const (dieDistribution d2))
+        distribution = pmap (uncurry (+)) bothDie
+    in
+        pmap predicate distribution
 
 d6D12 =
     let drawDie n = pmap ((== n) . sides) bagDistribution
@@ -101,17 +113,34 @@ d6D12 =
     in
         bindx drawD6 (\d -> pmap ((&&) d) drawD12)
 
-d6D12Sum11 = bindx d6D12 (\_ -> sum11 6 12)
+d6D12Sum11 = bindx d6D12 (const $ sum11 6 12)
 
 sum11ConditionalD6D12 :: Distribution ((Die, Die), Bool)
 sum11ConditionalD6D12 =
-    let twoDie = bindx bagDistribution (\_ -> bagDistribution) -- Distribution (Die, Die)
+    let twoDie = bindx bagDistribution (const bagDistribution) -- Distribution (Die, Die)
     in
         bindx twoDie (\(d1,d2) -> sum11 (sides d1) (sides d2)) -- Distribution ((Die, Die),Bool)
 
 
---tallySheet :: (Int -> Bool) -> Distribution ((Die, Die))
---tallySheet
+tallySheet :: (Int -> Bool) -> Distribution ((Die, Die),[Col])
+tallySheet predicate =
+    let -- Distribution (Die, Die)
+        twoDie = bindx bagDistribution (const bagDistribution)
+        -- mapToColumn :: Bool -> Col
+        mapToColumn b = if b == True then Left else Right
+        -- throw :: (Die, Die) -> Distribution Col
+        throw (d1, d2) = pmap mapToColumn $ sumDie d1 d2 predicate
+        -- baseThrowCols :: (Die, Die) -> Distribution [Col]
+        baseThrowCols dice = pmap (\x -> [x]) $ throw dice
+        -- throwMany :: (Die, Die) -> Distribution [Col]
+        throwMany dice =
+            pmap (\(_,cols) -> cols) $
+            bindx (preturn [1..2])
+                (\(_:xs) -> foldr (\base acc -> independent (throw dice) acc) (baseThrowCols dice) xs)
+        -- thirtyThrows :: Distribution ((Die,Die),[Col])
+        thirtyThrows = bindx twoDie throwMany
+    in
+        thirtyThrows
 
 
 answer :: Show a => String -> a -> IO ()
@@ -123,3 +152,5 @@ main = do
     answer "C" $ probabilityOf (True,True) d6D12
     answer "D" $ probabilityOf ((True, True), True) d6D12Sum11
     answer "E" $ probabilityGiven (die 4, die 4) True sum11ConditionalD6D12
+    answer "F" $ probabilityGiven (die 4, die 4) [Left,Left] (tallySheet (< 8))
+    --answer "rawF" $ tallySheet (< 8)
