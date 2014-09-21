@@ -1,10 +1,11 @@
 import Data.List (groupBy)
 
-data Die = FairDie Int
-
 type Distribution a = [(a, Double)]
-instance Eq Die where
-    (FairDie a) == (FairDie b) = a == b
+data Die = FairDie Int deriving (Show, Eq)
+data Col = Left | Right deriving (Show, Eq)
+
+--data Distribution a = P [(a, Double)] deriving (Show, Eq)
+
 
 regroup :: Eq a => Distribution a -> Distribution a
 regroup xs =
@@ -60,13 +61,6 @@ bindx xs f =
     in
         foldr (++) [] allDistributions
 
---liftp2 :: (a -> b -> c) -> Distribution a -> Distribution b -> Distribution c
-
--- The 2 comes from the fact that there are 2 ways, of equal likelihood, to draw an a and a b.
---drawABfromXwithReplacement :: Eq a => a -> a -> Distribution a -> Double
---drawABfromXwithReplacement a b x =
-    --(if a == b then 1 else 2) * (probabilityOf a x) * (probabilityOf b x)
-
 die :: Int -> Die
 die = FairDie
 
@@ -93,9 +87,9 @@ bagDistribution =
             ]
 
 sum11 d1 d2 =
-    let d6 = dieDistribution $ die d1
-        d12 = dieDistribution $ die d2
-        bothDie = bindx d6 (\_ -> d12)
+    let dieA = dieDistribution $ die d1
+        dieB = dieDistribution $ die d2
+        bothDie = bindx dieA (\_ -> dieB)
         distribution = pmap (uncurry (+)) bothDie
     in
         pmap (==11) distribution
@@ -109,10 +103,15 @@ d6D12 =
 
 d6D12Sum11 = bindx d6D12 (\_ -> sum11 6 12)
 
+sum11ConditionalD6D12 :: Distribution ((Die, Die), Bool)
 sum11ConditionalD6D12 =
     let twoDie = bindx bagDistribution (\_ -> bagDistribution) -- Distribution (Die, Die)
     in
         bindx twoDie (\(d1,d2) -> sum11 (sides d1) (sides d2)) -- Distribution ((Die, Die),Bool)
+
+
+--tallySheet :: (Int -> Bool) -> Distribution ((Die, Die))
+--tallySheet
 
 
 answer :: Show a => String -> a -> IO ()
