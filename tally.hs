@@ -9,8 +9,8 @@ instance Eq Die where
 regroup :: Eq a => Distribution a -> Distribution a
 regroup xs =
     let tags = groupBy (\(x, px) (y, py) -> x == y) xs
-        addProbabilities (_, partial) (tag, total) = (tag, partial + total)
-        simplfyTag ts = foldr addProbabilities (head ts) ts
+        addProbabilities (tag, partial) (_, total) = (tag, partial + total)
+        simplfyTag ts = foldr addProbabilities (undefined, 0) ts
     in
         map simplfyTag tags
 
@@ -26,7 +26,12 @@ equally xs =
 --weighted :: [(a, Double)] -> Distribution a
 
 probabilityOf :: Eq a => a -> Distribution a -> Double
-probabilityOf elem dist = snd $ head $ filter (((==) elem) . fst) dist
+probabilityOf elem dist =
+    let search = filter (((==) elem) . fst) dist
+    in
+        case search of
+            (_,p) : xs -> p
+            _ -> 0
 
 pmap :: Eq b => (a -> b) -> Distribution a -> Distribution b
 pmap f xs =
@@ -35,9 +40,9 @@ pmap f xs =
         regroup xs'
 
 bindx :: Distribution a -> (a -> Distribution b) -> Distribution (a,b)
-bindx xs distributionMap =
+bindx xs f =
     let combineDistribution (a,ap) (b,bp) = ((a,b), ap * bp)
-        bind' (a, ap) = map (combineDistribution (a, ap)) $ distributionMap a
+        bind' (a, ap) = map (combineDistribution (a, ap)) $ f a
         allDistributions = map bind' xs 
     in
         foldr (++) [] allDistributions
@@ -97,4 +102,6 @@ answer number ans = putStrLn $ number ++ ": " ++ show ans
 main :: IO ()
 main = do
     answer "B" probabilityOf11
-    answer "C1" probabilityOfD6D12
+    answer "C1a" probabilityOfD6D12
+    answer "C1b" $ drawABfromXwithReplacement (die 6) (die 12) bagDistribution
+    answer "probD6" $ probabilityOf (die 6) bagDistribution
