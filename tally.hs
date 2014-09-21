@@ -77,18 +77,24 @@ bagDistribution =
 probabilityOf11 =
     let d6 = dieDistribution $ die 6
         d12 = dieDistribution $ die 12
-        -- [((Int,Int),Double)]
         bothDie = bindx d6 (\_ -> d12)
         distribution = pmap (uncurry (+)) bothDie
         isEleven = pmap (==11) distribution
     in
-        probabilityOf isEleven True
+        probabilityOf True isEleven
 
---probabilityOfD6D12 =
---    let drawDie n = pmap ((== n) . sides) bagDistribution
---        drawD6 = drawDie 6 -- Distribtion Int
---        drawD12 = drawDie 12
+probabilityOfD6D12 =
+    let drawDie n = pmap ((== n) . sides) bagDistribution
+        drawD6 = drawDie 6 -- Distribution Bool
+        drawD12 = drawDie 12
+        drawBoth = bindx drawD6 (\d -> pmap ((&&) d) drawD12)
+    in
+        probabilityOf (True,True) drawBoth
 
---    in
---        probabilityOf drawBoth (True,True)
+answer :: Show a => String -> a -> IO ()
+answer number ans = putStrLn $ number ++ ": " ++ show ans
 
+main :: IO ()
+main = do
+    answer "B" probabilityOf11
+    answer "C1" probabilityOfD6D12
