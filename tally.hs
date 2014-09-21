@@ -4,10 +4,18 @@ type Distribution a = [(a, Double)]
 data Die = FairDie Int
 
 regroup :: Distribution a -> Distribution a
+regroup xs =
+    
 
 support :: Distribution a -> [a]
 
 equally :: [a] -> Distribution a
+equally xs =
+    let xLength = length xs
+        dupes = map (\x -> (x, 1 / xLength)) xs
+    in
+        regroup dupes
+
 weighted :: [(a, Double)] -> Distribution a
 
 probabilityOf :: Distribution a -> a -> Double
@@ -26,11 +34,13 @@ bindx xs distributionMap =
     in
         foldr (++) [] allDistributions
 
-and :: Distribution a -> Distribution b -> Distribution (a,b)
---given :: Distribution a -> Distribution b -> Distribution (a)
-
 liftp2 :: (a -> b -> c) -> Distribution a -> Distribution b -> Distribution c
 
+drawABfromXwithReplacement :: a -> a -> Distribution a -> double
+drawABfromXwithReplacement a, b, x =
+-- The 2 comes from the fact that there are 2 ways, of equal likelihood, to draw an a and a b.
+    (if a == b then 1 else 2) *
+    (probabilityOf a x) * (probabilityOf b x)
 
 die :: Int -> Die
 sides :: Die -> Int
@@ -49,9 +59,9 @@ probabilityOf11 =
 
 probabilityOfD6D12 =
     let drawDie n = pmap ((== n) . sides) bagDistribution
-        drawD6 = draw 6
-        drawD12 = draw 12
-        drawBoth = and drawD6 drawD12
+        drawD6 = drawDie 6 -- Distribtion Int
+        drawD12 = drawDie 12
+
     in
         probabilityOf drawBoth (True,True)
 
