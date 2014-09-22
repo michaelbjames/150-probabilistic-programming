@@ -84,19 +84,14 @@ dieDistribution (FairDie n) = equally [1..n]
 
 bagDistribution :: Distribution Die
 bagDistribution =
-    let d4 = die 4
-        d6 = die 6
-        d10 = die 10
-        d12 = die 12
-        d20 = die 20
-    in
-        equally
-            [ d4
-            , d6
-            , d10
-            , d12
-            --, d20
-            ]
+    equally . foldr (++) [] $
+        [ replicate 12 $ die 4
+        , replicate 12 $ die 6
+        , replicate 12 $ die 8
+        , replicate 16 $ die 10
+        , replicate 17 $ die 12
+        , replicate 17 $ die 20
+        ]
 
 
 sumDie :: Die -> Die -> (Int -> Bool) -> Distribution Bool
