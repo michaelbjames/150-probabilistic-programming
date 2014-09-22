@@ -4,6 +4,7 @@ import Data.List (groupBy)
 type Distribution a = [(a, Double)]
 data Die = FairDie Int deriving (Show, Eq)
 data Col = Left | Right deriving (Show, Eq)
+type Tally = (Integer, Integer)
 
 regroup :: Eq a => Distribution a -> Distribution a
 regroup xs =
@@ -32,6 +33,9 @@ probabilityOf elem dist =
             (_,p) : xs -> p
             _ -> 0
 
+probabilityOfPredicate :: Eq a => (a -> Bool) -> Distribution a -> Double
+probabilityOfPredicate predicate dist = probabilityOf True $ pmap predicate dist
+
 probabilityGiven :: (Eq a, Eq b) => a -> b -> Distribution (a, b) -> Double
 probabilityGiven elem given dist =
     let givenDistribution = pfilter (\(_,g) -> g == given) dist
@@ -59,8 +63,11 @@ bindx xs f =
     in
         regroup $ foldr (++) [] allDistributions
 
-independent :: Eq a => Distribution a -> Distribution [a] -> Distribution [a]
-independent a bs = pmap (\(bs',a') -> a':bs') $ bindx bs (const a)
+independentBind :: (Eq a, Eq b) => Distribution a -> Distribution b -> Distribution (a,b)
+independentBind distA distB = bindx distA (const distB)
+
+independentFold :: Eq a => Distribution a -> Distribution [a] -> Distribution [a]
+independentFold a bs = pmap (\(bs',a') -> a':bs') $ bindx bs (const a)
 
 
 preturn :: Eq a => a -> Distribution a
@@ -86,10 +93,18 @@ bagDistribution =
         equally
             [ d4
             , d6
-            --, d10
-            --, d12
+            , d10
+            , d12
             --, d20
             ]
+
+
+sumDie :: Die -> Die -> (Int -> Bool) -> Distribution Bool
+sumDie d1 d2 predicate =
+    let bothDie = bindx (dieDistribution d1) (const (dieDistribution d2))
+        distribution = pmap (uncurry (+)) bothDie
+    in
+        pmap predicate distribution
 
 sum11 d1 d2 =
     let dieA = dieDistribution $ die d1
@@ -98,13 +113,6 @@ sum11 d1 d2 =
         distribution = pmap (uncurry (+)) bothDie
     in
         pmap (==11) distribution
-
-sumDie :: Die -> Die -> (Int -> Bool) -> Distribution Bool
-sumDie d1 d2 predicate =
-    let bothDie = bindx (dieDistribution d1) (const (dieDistribution d2))
-        distribution = pmap (uncurry (+)) bothDie
-    in
-        pmap predicate distribution
 
 d6D12 =
     let drawDie n = pmap ((== n) . sides) bagDistribution
@@ -122,7 +130,7 @@ sum11ConditionalD6D12 =
         bindx twoDie (\(d1,d2) -> sum11 (sides d1) (sides d2)) -- Distribution ((Die, Die),Bool)
 
 
-tallySheet :: (Int -> Bool) -> Distribution ((Die, Die),[Col])
+tallySheet :: (Int -> Bool) -> Distribution ((Die, Die), Tally)
 tallySheet predicate =
     let -- Distribution (Die, Die)
         twoDie = bindx bagDistribution (const bagDistribution)
@@ -135,16 +143,25 @@ tallySheet predicate =
         -- throwMany :: (Die, Die) -> Distribution [Col]
         throwMany dice =
             pmap (\(_,cols) -> cols) $
-            bindx (preturn [1..2])
-                (\(_:xs) -> foldr (\base acc -> independent (throw dice) acc) (baseThrowCols dice) xs)
+            bindx (preturn [1..3])
+                (\(_:xs) -> foldr (\base acc -> independentFold (throw dice) acc) (baseThrowCols dice) xs)
+        -- tally :: [Col] -> Tally
+        tally cols =
+            foldr (\base (l, r) ->
+                    case base of
+                        Left -> (l+1, r)
+                        Right -> (l, r+1))
+                (0, 0)
+                cols
+        -- orderIndependent :: (Die, Die) -> Distribution Tally
+        orderIndependent dice = pmap tally $ throwMany dice
         -- thirtyThrows :: Distribution ((Die,Die),[Col])
-        thirtyThrows = bindx twoDie throwMany
+        thirtyThrows = bindx twoDie orderIndependent
     in
         thirtyThrows
 
 
-answer :: Show a => String -> a -> IO ()
-answer number ans = putStrLn $ number ++ ": " ++ show ans
+
 
 main :: IO ()
 main = do
@@ -152,5 +169,8 @@ main = do
     answer "C" $ probabilityOf (True,True) d6D12
     answer "D" $ probabilityOf ((True, True), True) d6D12Sum11
     answer "E" $ probabilityGiven (die 4, die 4) True sum11ConditionalD6D12
-    answer "F" $ probabilityGiven (die 4, die 4) [Left,Left] (tallySheet (< 8))
+    answer "F" $ probabilityGiven (die 4, die 4) (0,3) (tallySheet (< 8))
     --answer "rawF" $ tallySheet (< 8)
+
+    where
+        answer number ans = putStrLn $ number ++ ": " ++ show ans
