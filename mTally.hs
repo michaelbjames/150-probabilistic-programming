@@ -96,14 +96,14 @@ problemE =
     (\(_,d1,d2) -> (d1,d2)) <$> pfilter (\(sum, d1, d2) -> sum == 12) problemB
 
 
---problemF :: Distribution Integer
+problemF :: Distribution Int
 problemF = regroup $ do
     let d4 = dieToDistribution $ Die 4
     roll <- d4
     rollSum <- regroup $ (+ roll) <$> d4
-    let rightTally = if rollSum >= 8 then (1 :: Integer) else (0 :: Integer)
-    --return rightTally
-    foldr sumDistribution (return 0) (replicate 4 $ return rightTally)
+    let rightTally = if rollSum >= 8 then (1 :: Int) else (0 :: Int)
+    --foldr sumDistribution (return 0) (replicate 30 $ return rightTally)
+    foldr sumDistribution (return 0) (replicate 30 $ return rollSum) -- This one is just wrong
 
 
 
