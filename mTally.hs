@@ -100,17 +100,16 @@ problemF :: Distribution Int
 problemF = regroup $ do
     let d4 = dieToDistribution $ Die 4
     roll <- d4
-    rollSum <- regroup $ (+ roll) <$> d4
-    let rightTally = if rollSum >= 8 then (1 :: Int) else (0 :: Int)
-    --foldr sumDistribution (return 0) (replicate 30 $ return rightTally)
-    foldr sumDistribution (return 0) (replicate 30 $ return rollSum) -- This one is just wrong
+    let rollSum = (+ roll) <$> d4
+    let rightTally = (\x -> if x >= 8 then 1 else 0) <$> rollSum
+    foldr sumDistribution (return 0) (replicate 30 rightTally)
 
 
 
 main = do
     answer "B" $ probabilityOf (\x -> x == (12, Die 6, Die 12) || x == (12, Die 12, Die 6)) problemB
     answer "E" $ probabilityOf (\x -> x == (Die 6, Die 12) || x == (Die 12, Die 6)) problemE
-    --answer "F" $ probabilityOf (== 3) problemF
-    answer "F" $ problemF
+    answer "F" $ probabilityOf (== 3) problemF
+    --answer "F" $ problemF
     where
         answer number ans = putStrLn $ number ++ ": " ++ show ans
