@@ -105,12 +105,24 @@ problemB = do
     sum <- sumDie bothDie
     return sum
 
-problemC :: Distribution (Die, Die)
-problemC =
+problemE :: Distribution (Die, Die)
+problemE =
     (\(_,d1,d2) -> (d1,d2)) <$> pfilter (\(sum, d1, d2) -> sum == 12) problemB
+
+problemF :: Distribution Tally
+problemF = do
+    bag <- bagDistribution
+    bothDie <- ((,) bag) <$> bagDistribution
+    let sumDie (die1, die2) = do
+        d1 <- dieToDistribution die1
+        d2 <- dieToDistribution die2
+        return (d1 + d2 < 8)
+    
+
+
 
 main = do
     answer "B" $ probabilityOf (== (12, Die 6, Die 12)) problemB
-    answer "C" $ probabilityOf (== (Die 6, Die 12)) problemC
+    answer "E" $ probabilityOf (== (Die 6, Die 12)) problemE
     where
         answer number ans = putStrLn $ number ++ ": " ++ show ans
