@@ -70,8 +70,8 @@ bagDistribution =
         , replicate 17 $ Die 20
         ]
 
-sumDistribution :: (Monad m, Num a) => m a -> m a -> m a
-sumDistribution xs ys = do
+sumDistribution :: (Eq a, Num a) => Distribution a -> Distribution a -> Distribution a
+sumDistribution xs ys = regroup $ do
     x <- xs
     y <- ys
     return $ x + y
@@ -101,9 +101,9 @@ problemF = regroup $ do
     let d4 = dieToDistribution $ Die 4
     roll <- d4
     rollSum <- regroup $ (+ roll) <$> d4
-    return rollSum
-    --let rightTally = if rollSum >= 8 then (1 :: Integer) else (0 :: Integer)
-    --foldr sumDistribution (return 0) (replicate 30 $ return rightTally)
+    let rightTally = if rollSum >= 8 then (1 :: Integer) else (0 :: Integer)
+    --return rightTally
+    foldr sumDistribution (return 0) (replicate 4 $ return rightTally)
 
 
 
