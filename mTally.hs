@@ -9,12 +9,6 @@ newtype Tally = LR (Integer, Integer) deriving (Show, Eq)
 instance Functor Distribution where
     fmap f (P xs) = P $ map (\(a,p) -> (f a, p)) xs
 
-class Functor pf => PFunctor pf where
-    pmap :: Ord b => (a -> b) -> pf a -> pf b
-
-instance PFunctor Distribution where
-    pmap f (P xs) = regroup $ map (\(a,p) -> (f a, p)) xs
-
 instance Monad Distribution where
     return x = P [(x, 1.0)]
     (P xs) >>= f =
@@ -27,20 +21,6 @@ instance Monad Distribution where
         in
             P $ foldr (++) [] allDistributions
 
-class Monad pm => PMonad pm where
-    preturn :: Ord a => a -> pm a
-    bindx :: (Ord a, Ord b) => pm a -> (a -> pm b) -> pm (a,b)
-
-instance PMonad Distribution where
-    preturn x = P [(x,1.0)]
-    bindx (P xs) f =
-        let combineDistribution (a,ap) (b,bp) = ((a,b), ap * bp)
-            unwrap (P xs) = xs
-            bind' (a, ap) = map (combineDistribution (a, ap)) $ unwrap (f a)
-            allDistributions = map bind' xs 
-        in
-            regroup $ foldr (++) [] allDistributions
-
 --------------------------
 -- SUPPORTING FUNCTIONS --
 --------------------------
@@ -50,7 +30,7 @@ equally as =
     let aLength = fromIntegral $ length as
         list = map (\a -> (a, 1 / aLength)) $ sort as
     in
-        regroup $ list
+        regroup . P $ list
 
 
 probabilityOf :: Ord a => (a -> Bool) -> Distribution a -> Double
@@ -66,14 +46,13 @@ pfilter pred (P dist) =
         P $ map (\(x,p) -> (x, p / totalProbability)) xs
 
 
-regroup :: Ord a => [(a,Double)] -> Distribution a
-regroup xs =
+regroup :: Eq a => Distribution a -> Distribution a
+regroup (P xs) =
     let tags = groupBy (\(x, px) (y, py) -> x == y) xs
         addProbabilities (tag, partial) (_, total) = (tag, partial + total)
         simplfyTag ts = foldr addProbabilities (undefined, 0) ts
-        sorter = sortBy (\(x,_) (y,_) -> compare x y)
     in
-        P . sorter $ map simplfyTag tags
+        P $ map simplfyTag tags
 
 
 dieToDistribution :: Die -> Distribution Int
@@ -89,6 +68,12 @@ bagDistribution =
         , replicate 17 $ Die 12
         , replicate 17 $ Die 20
         ]
+
+sumDistribution :: (Monad m, Num a) => m a -> m a -> m a
+sumDistribution xs ys = do
+    x <- xs
+    y <- ys
+    return $ x + y
 
 -------------------
 -- QUESTION CODE --
@@ -109,20 +94,22 @@ problemE :: Distribution (Die, Die)
 problemE =
     (\(_,d1,d2) -> (d1,d2)) <$> pfilter (\(sum, d1, d2) -> sum == 12) problemB
 
-problemF :: Distribution Tally
-problemF = do
-    bag <- bagDistribution
-    bothDie <- ((,) bag) <$> bagDistribution
-    let sumDie (die1, die2) = do
-        d1 <- dieToDistribution die1
-        d2 <- dieToDistribution die2
-        return (d1 + d2 < 8)
-    
+
+--problemF :: Distribution Integer
+problemF = regroup $ do
+    let d4 = dieToDistribution $ Die 4
+    roll <- d4
+    rollSum <- regroup $ (+ roll) <$> d4
+    return rollSums
+    --let rightTally = if rollSum >= 8 then (1 :: Integer) else (0 :: Integer)
+    --foldr sumDistribution (return 0) (replicate 30 $ return rightTally)
 
 
 
 main = do
-    answer "B" $ probabilityOf (== (12, Die 6, Die 12)) problemB
-    answer "E" $ probabilityOf (== (Die 6, Die 12)) problemE
+    answer "B" $ probabilityOf (\x -> x == (12, Die 6, Die 12) || x == (12, Die 12, Die 6)) problemB
+    answer "E" $ probabilityOf (\x -> x == (Die 6, Die 12) || x == (Die 12, Die 6)) problemE
+    --answer "F" $ probabilityOf (== 3) problemF
+    answer "F" $ problemF
     where
         answer number ans = putStrLn $ number ++ ": " ++ show ans
