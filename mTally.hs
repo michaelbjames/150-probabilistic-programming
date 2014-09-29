@@ -45,14 +45,15 @@ pfilter pred (P dist) =
     in
         P $ map (\(x,p) -> (x, p / totalProbability)) xs
 
-
 regroup :: Eq a => Distribution a -> Distribution a
 regroup (P xs) =
-    let tags = groupBy (\(x, px) (y, py) -> x == y) xs
-        addProbabilities (tag, partial) (_, total) = (tag, partial + total)
-        simplfyTag ts = foldr addProbabilities (undefined, 0) ts
+    let addToList (a,pa) [] = [(a,pa)]
+        addToList (a,pa) ((b,pb):bs) =
+            if a == b
+            then (a, pa + pb):bs
+            else (b,pb) :(addToList (a,pa) bs)
     in
-        P $ map simplfyTag tags
+        P $ foldr addToList [] xs
 
 
 dieToDistribution :: Die -> Distribution Int
@@ -100,7 +101,7 @@ problemF = regroup $ do
     let d4 = dieToDistribution $ Die 4
     roll <- d4
     rollSum <- regroup $ (+ roll) <$> d4
-    return rollSums
+    return rollSum
     --let rightTally = if rollSum >= 8 then (1 :: Integer) else (0 :: Integer)
     --foldr sumDistribution (return 0) (replicate 30 $ return rightTally)
 
