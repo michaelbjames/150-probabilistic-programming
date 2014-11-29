@@ -146,9 +146,9 @@ dieForTally n =
 main = do
     answer "D" $ probabilityOf (\x -> x == (12, Die 6, Die 12) || x == (12, Die 12, Die 6)) problemD
     answer "E" $ probabilityOf (\x -> x == (Die 6, Die 12) || x == (Die 12, Die 6)) problemE
-    answer "F" $ probabilityOf (== 3) problemF
-    --answer "F2" $ probabilityOf (\x -> x == (Die 4, Die 4, 3)) totalTallies
-    answer "Two D4s given 3 right marks" $ probabilityOf (== (Die 4, Die 4)) (dieForTally 3)
+    --answer "F" $ probabilityOf (== 3) problemF
+    answer "F2" $ probabilityOf (\x -> x == (Die 4, Die 4, 3)) totalTallies
+    --answer "Two D4s given 3 right marks" $ probabilityOf (== (Die 4, Die 4)) (dieForTally 3)
     answer "The Odds" $ sortProbabilities (dieForTally 3)
     --answer "F" $ problemF
     where
