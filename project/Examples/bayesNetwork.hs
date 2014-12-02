@@ -23,10 +23,11 @@ choosev prob left right parent =
     in
         mapl (const parent) simpleNode
 
-family :: Bayes () Family
+family :: Bayes Family ()
 family = choosev 0.8 Home Away ()
-sick :: Bayes () Sick
+sick :: Bayes Sick ()
 sick = undefined
+
 
 light :: Family -> Bayes Family Light
 light fam = choosev (lookupError lightTable fam) On Off fam
@@ -36,10 +37,10 @@ bark :: Dog -> Bayes Dog Bark
 bark = undefined
 
 network :: Bayes (Sick, Family) (Bark, Light)
-network =
-    let lightNode = bindGeneral family (\_ obs -> light obs)
-        dogNode = liftB2 (\_ sickFamily -> dog sickFamily) sick family
-        barkNode = bindGenearl dogNode (\_ obs -> bark obs)
+network = undefined
+    --let lightNode = bindGeneral family (\_ obs -> light obs)
+    --    dogNode = liftB2 (\_ sickFamily -> dog sickFamily) sick family
+    --    barkNode = bindGenearl dogNode (\_ obs -> bark obs)
 
 -- light : On, Bark : Quiet
 observations :: ((Bark, Light) -> Bool) -> Bayes (Sick, Family) (Bark, Light)
