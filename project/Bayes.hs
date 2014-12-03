@@ -59,6 +59,12 @@ DiePattern : draw3
 bindLatent :: Bayes lat obs -> (lat -> Bayes l2 o2) -> Bayes l2 o2
 bindLatent = undefined
 
+{-
+BayesNetwork : network
+-}
+bindTransform :: Bayes lat obs -> (obs -> Bayes obs newobs) -> Bayes obs newobs
+bindTransform = undefined
+
 -- this is like M0 a -> (b -> a -> M1 c) -> M1 c
 -- It's a monad transformer...
 -- Would you ever want to change the latent variable?

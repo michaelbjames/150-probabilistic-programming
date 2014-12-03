@@ -1,5 +1,3 @@
-module Example.BayesNetwork where
-
 import Bayes
 import Prelude hiding (lookup)
 import Data.Map.Strict (Map, lookup)
@@ -10,21 +8,16 @@ data Dog = In | Out deriving (Eq, Ord)
 data Sick = Sick | Healthy deriving (Eq, Ord)
 data Bark = Loud | Quiet deriving (Eq, Ord)
 
-lookupError :: k -> Map k v -> v
-lookupError = undefined
-lightTable :: Map Light Double
-lightTable = undefined
-
 choosev :: Double -> a -> a -> parent -> Bayes parent a
 choosev prob left right parent =
     let probs = [(prob, left), (1 - prob, right)]
-        simpleNode :: Bayes a a
-        simpleNode = choose probs left right
+        simpleNode = choose probs
     in
-        mapl (const parent) simpleNode
+         bind1 (returnLatent parent) (\_ _ -> simpleNode)
 
 family :: Bayes Family ()
-family = choosev 0.8 Home Away ()
+family = mapr (const ()) $ choose [(0.8,Home), (0.2,Away)]
+
 sick :: Bayes Sick ()
 sick = undefined
 
@@ -37,10 +30,17 @@ bark :: Dog -> Bayes Dog Bark
 bark = undefined
 
 network :: Bayes (Sick, Family) (Bark, Light)
-network = undefined
-    --let lightNode = bindGeneral family (\_ obs -> light obs)
-    --    dogNode = liftB2 (\_ sickFamily -> dog sickFamily) sick family
-    --    barkNode = bindGenearl dogNode (\_ obs -> bark obs)
+network =
+    let lightNode :: Bayes Family Light
+        lightNode = bindTransform family (\lat -> light lat)
+        dogNode :: Bayes (Sick, Family) Dog
+        dogNode = liftB2 (\sickFamily _ -> dog sickFamily) sick family
+        barkNode :: Bayes Dog Bark
+        barkNode = bindTransform dogNode (\lat -> bark lat)
+        exitNodes :: Bayes (Dog, Family) (Bark, Light)
+        exitNodes = liftB2 spawn barkNode lightNode
+    in
+        liftB2 (\(sickFamily,_) (_,barkLight) -> (sickFamily,barkLight)) dogNode exitNodes
 
 -- light : On, Bark : Quiet
 observations :: ((Bark, Light) -> Bool) -> Bayes (Sick, Family) (Bark, Light)
@@ -52,3 +52,8 @@ query = undefined
 {-
 Notice that the Dog being In or Out is not accessible in the model
 -}
+
+lookupError :: Map k v -> k -> v
+lookupError = undefined
+lightTable :: Map Family Double
+lightTable = undefined
