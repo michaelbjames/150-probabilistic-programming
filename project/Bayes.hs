@@ -10,12 +10,22 @@ data Bayes latent observable = B
 spawn :: latent -> observable -> Bayes latent observable
 spawn = undefined
 
+
+{-
+
+-}
 returnLatent :: latent -> Bayes latent ()
 returnLatent = undefined
 
+{-
+Good for Bayes Nets
+-}
 choose :: [(Double, lat)] -> Bayes lat lat
 choose = undefined
 
+{-
+Helpful for Dice-world problems
+-}
 equally :: [lat] -> Bayes lat lat
 equally = undefined
 
