@@ -15,10 +15,10 @@ choosev prob left right parent =
     in
          bind1 (returnLatent parent) (\_ _ -> simpleNode)
 
-family :: Bayes Family ()
-family = mapr (const ()) $ choose [(0.8,Home), (0.2,Away)]
+family :: Bayes Family Family
+family = choose [(0.8,Home), (0.2,Away)]
 
-sick :: Bayes Sick ()
+sick :: Bayes Sick Sick
 sick = undefined
 
 
@@ -40,7 +40,7 @@ network =
         exitNodes :: Bayes (Dog, Family) (Bark, Light)
         exitNodes = liftB2 spawn barkNode lightNode
     in
-        liftB2 (\(sickFamily,_) (_,barkLight) -> (sickFamily,barkLight)) dogNode exitNodes
+        liftB2 (\(sickFamily,_) (_,barkLight) -> spawn sickFamily barkLight) dogNode exitNodes
 
 -- light : On, Bark : Quiet
 observations :: ((Bark, Light) -> Bool) -> Bayes (Sick, Family) (Bark, Light)

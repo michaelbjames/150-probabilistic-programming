@@ -25,9 +25,7 @@ roll (D n) = transform (myRoll (D n)) (\_ _ -> D n)
         myRoll (D n) = equally [1..n]
 
 rollDice :: Bayes [Die] () -> Bayes [Die] [Int]
-rollDice draw =
-    bind1 draw (\die _ ->
-        bsequence (map roll die))
+rollDice draw = bind1 draw (\die _ -> bsequence (map roll die))
 
 matchCriteria :: ([Int] -> Bool) -> Bayes [Die] [Int] -> Bayes [Die] ()
 matchCriteria = bfilter
