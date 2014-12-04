@@ -16,8 +16,3 @@ guess = undefined
 
 mle :: Bayes y () -> (y, Double)
 mle = undefined
-
-posterior :: h -> (x,y) -> Bayes w (x,y)
-posterior = undefined
-
-posterior_predictive :: h -> (x,y) -> x -> 

@@ -23,8 +23,8 @@ returnObserv = undefined
 {-
 Good for Bayes Nets
 -}
-choose :: [(Double, a)] -> Bayes a a
-choose = undefined
+weighted :: [(Double, a)] -> Bayes a a
+weighted = undefined
 
 
 equallyLatent :: [lat] -> Bayes lat ()
@@ -72,15 +72,7 @@ BayesNetwork : network
 bindTransform :: Bayes lat obs -> (lat -> obs -> Bayes obs newobs) -> Bayes obs newobs
 bindTransform = undefined
 
-{-
-feels like a backdoor
-BayesNetwork : network
--}
-liftB2 :: ((lat1,lat2) -> (obs1,obs2) -> Bayes a b) ->
-         Bayes lat1 obs1 ->
-         Bayes lat2 obs2 ->
-         Bayes a b
-liftB2 = undefined
+
 
 {-
 DiePattern : rollDice
@@ -88,6 +80,12 @@ Notes: It would be better if it were a set of Bayes to a Bayes of sets
 -}
 bsequence :: [Bayes lat obs] -> Bayes [lat] [obs]
 bsequence = undefined
+
+{-
+This is a combination of bindObserv and bindLatent
+-}
+joint :: Bayes lat1 obs1 -> Bayes lat2 obs2 -> Bayes (lat1,lat2) (obs1,obs2)
+joint = undefined
 
 
 ------------------------------------------------------
@@ -121,3 +119,13 @@ DiePattern : roll
 -}
 transform :: Bayes lat1 obs -> (lat1 -> obs -> lat2) -> Bayes lat2 obs
 transform = undefined
+
+{-
+feels like a backdoor
+BayesNetwork : network
+-}
+bind2General :: ((lat1,lat2) -> (obs1,obs2) -> Bayes a b) ->
+         Bayes lat1 obs1 ->
+         Bayes lat2 obs2 ->
+         Bayes a b
+bind2General = undefined
