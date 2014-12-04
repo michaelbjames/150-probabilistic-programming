@@ -11,12 +11,12 @@ data Bark = Loud | Quiet deriving (Eq, Ord)
 choosev :: Double -> a -> a -> parent -> Bayes parent a
 choosev prob left right parent =
     let probs = [(prob, left), (1 - prob, right)]
-        choices = weightedObserv probs
+        choices = weightedO probs
     in
-         bindObserv (returnLatent parent) (\_ -> choices)
+         bindO (returnL parent) (\_ -> choices)
 
 family :: Bayes Family ()
-family = weightedLatent [(0.8,Home), (0.2,Away)]
+family = weightedL [(0.8,Home), (0.2,Away)]
 
 sick :: Bayes Sick ()
 sick = undefined
@@ -33,15 +33,15 @@ bark = undefined
 network :: Bayes (Sick, Family) (Bark, Light)
 network =
     let lightNode :: Bayes Family Light
-        lightNode = bindObserv family (\lat -> light lat)
+        lightNode = bindO family (\lat -> light lat)
         dogNode :: Bayes (Sick, Family) Dog
-        dogNode = bindObserv (joint sick family) (\sickFamily -> dog sickFamily)
+        dogNode = bindO (joint sick family) (\sickFamily -> dog sickFamily)
         barkNode :: Bayes Dog Bark
-        barkNode = bindTransform dogNode (\_ obs -> bark obs)
+        barkNode = bindT dogNode (\_ obs -> bark obs)
         exitNodes :: Bayes (Dog, Family) (Bark, Light)
         exitNodes = joint barkNode lightNode
     in
-        bindObserv dogNode (\_ -> exitNodes)
+        bindO dogNode (\_ -> exitNodes)
 
 -- light : On, Bark : Quiet
 observations :: ((Bark, Light) -> Bool) -> Bayes (Sick, Family) (Bark, Light)

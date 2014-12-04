@@ -13,32 +13,32 @@ Is this a backdoor
 spawn :: lat -> obs -> Bayes lat obs
 spawn = undefined
 
-returnLatent :: lat -> Bayes lat ()
-returnLatent = undefined
+returnL :: lat -> Bayes lat ()
+returnL = undefined
 
-returnObserv :: obs -> Bayes () obs
-returnObserv = undefined
-
-
-weightedLatent :: [(Double, lat)] -> Bayes lat ()
-weightedLatent = undefined
-
-weightedObserv :: [(Double, obs)] -> Bayes () obs
-weightedObserv = undefined
+returnO :: obs -> Bayes () obs
+returnO = undefined
 
 
-equallyLatent :: [lat] -> Bayes lat ()
-equallyLatent = undefined
+weightedL :: [(Double, lat)] -> Bayes lat ()
+weightedL = undefined
 
-equallyObserv :: [obs] -> Bayes () obs
-equallyObserv = undefined
+weightedO :: [(Double, obs)] -> Bayes () obs
+weightedO = undefined
 
 
-mapObserv :: (obs -> b) -> Bayes lat obs -> Bayes lat b
-mapObserv = undefined
+equallyL :: [lat] -> Bayes lat ()
+equallyL = undefined
 
-mapLatent :: (lat -> a) -> Bayes lat obs -> Bayes a obs
-mapLatent = undefined
+equallyO :: [obs] -> Bayes () obs
+equallyO = undefined
+
+
+mapO :: (obs -> b) -> Bayes lat obs -> Bayes lat b
+mapO = undefined
+
+mapL :: (lat -> a) -> Bayes lat obs -> Bayes a obs
+mapL = undefined
 
 
 {-
@@ -57,20 +57,20 @@ probabilityOf = undefined
 this appears to just make a simple distribution from the latent variable
 then mix it in.
 -}
-bindObserv :: Bayes lat obs -> (lat -> Bayes z o) -> Bayes lat o
-bindObserv = undefined
+bindO :: Bayes lat obs -> (lat -> Bayes z o) -> Bayes lat o
+bindO = undefined
 
 {- Used:
 DiePattern : draw3
 -}
-bindLatent :: Bayes lat obs -> (lat -> Bayes l z) -> Bayes l obs
-bindLatent = undefined
+bindL :: Bayes lat obs -> (lat -> Bayes l z) -> Bayes l obs
+bindL = undefined
 
 {-
 BayesNetwork : network
 -}
-bindTransform :: Bayes lat obs -> (lat -> obs -> Bayes obs newobs) -> Bayes obs newobs
-bindTransform = undefined
+bindT :: Bayes lat obs -> (lat -> obs -> Bayes obs newobs) -> Bayes obs newobs
+bindT = undefined
 
 
 
@@ -82,7 +82,7 @@ bsequence :: [Bayes lat obs] -> Bayes [lat] [obs]
 bsequence = undefined
 
 {-
-This is a combination of bindObserv and bindLatent
+This is a combination of bindO and bindL
 -}
 joint :: Bayes lat1 obs1 -> Bayes lat2 obs2 -> Bayes (lat1,lat2) (obs1,obs2)
 joint = undefined
