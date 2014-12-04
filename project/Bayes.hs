@@ -54,8 +54,8 @@ probabilityOf :: (lat -> Bool) -> Bayes lat obs -> Double
 probabilityOf = undefined
 
 {-
-DiePattern : rollDice
-BayesNetwork : choosev
+this appears to just make a simple distribution from the latent variable
+then mix it in.
 -}
 bindObserv :: Bayes lat obs -> (lat -> Bayes z o) -> Bayes lat o
 bindObserv = undefined
@@ -89,6 +89,8 @@ joint = undefined
 
 merge :: Bayes lat obs -> Bayes lat obs -> Bayes lat obs
 merge = undefined
+
+expectationMax :: Bayes lat obs -> Bayes prior lat -> Bayes lat obs
 
 
 ------------------------------------------------------
