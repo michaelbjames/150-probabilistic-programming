@@ -12,23 +12,24 @@ bag = undefined
 
 draw3 :: Bayes Die () -> Bayes [Die] ()
 draw3 bag =
-    bindLatent bag (\d1 ->
-    bindLatent bag (\d2 ->
-    bindLatent bag (\d3 ->
+    bindLatent bag (\d1 _ ->
+    bindLatent bag (\d2 _ ->
+    bindLatent bag (\d3 _ ->
         returnLatent [d1, d2, d3] )))
 
 -- formerly Dist [(Die, Int)]
 roll :: Die -> Bayes Die Int
-roll (D n) = transform (myRoll (D n)) (\_ _ -> D n)
+roll myDie = bindObserv (returnLatent myDie) myRoll
     where
-        myRoll (D 10) = equally [0..9]
-        myRoll (D n) = equally [1..n]
+        myRoll :: Die -> () -> Bayes () Int
+        myRoll (D 10) _ = equallyObserv [0..9]
+        myRoll (D n) _ = equallyObserv [1..n]
 
 rollDice :: Bayes [Die] () -> Bayes [Die] [Int]
-rollDice draw = bind1 draw (\die _ -> bsequence (map roll die))
+rollDice draw = bindObserv draw (\die _ -> bsequence (map roll die))
 
-matchCriteria :: ([Int] -> Bool) -> Bayes [Die] [Int] -> Bayes [Die] ()
+matchCriteria :: ([Int] -> Bool) -> Bayes [Die] [Int] -> Bayes [Die] [Int]
 matchCriteria = bfilter
 
-desiredDieProbability :: ([Die] -> Bool) -> Bayes [Die] () -> Double
+desiredDieProbability :: ([Die] -> Bool) -> Bayes [Die] [Int] -> Double
 desiredDieProbability = probabilityOf

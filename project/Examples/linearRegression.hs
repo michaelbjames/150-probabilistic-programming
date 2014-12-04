@@ -7,12 +7,17 @@ Train
 Guess
 -}
 
-train :: [(X,Y)] -> Bayes Y X
+train :: [(x,y)] -> Bayes y x
 train = undefined
 
 -- bfilter?
-guess :: Bayes Y X -> X -> Bayes Y ()
+guess :: Bayes y x -> x -> Bayes y ()
 guess = undefined
 
-mle :: Bayes Y () -> (Y, Double)
+mle :: Bayes y () -> (y, Double)
 mle = undefined
+
+posterior :: h -> (x,y) -> Bayes w (x,y)
+posterior = undefined
+
+posterior_predictive :: h -> (x,y) -> x -> 
