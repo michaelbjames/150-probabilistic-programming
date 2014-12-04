@@ -7,12 +7,14 @@ Train
 Guess
 -}
 
-train :: [(x,y)] -> Bayes y x
-train = undefined
+train :: [(x,y)] -> Bayes (Bayes w y) x
+train = (foldr1 merge) . (map (uncurry $ flip spawn))
 
--- bfilter?
-guess :: Bayes y x -> x -> Bayes y ()
-guess = undefined
+{-
+Distribution over ys where x is held constant at the given value.
+-}
+guess :: Eq x => x -> Bayes y x -> Bayes y x
+guess datum = bfilter (==datum)
 
 mle :: Bayes y () -> (y, Double)
 mle = undefined

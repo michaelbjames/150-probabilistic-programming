@@ -11,19 +11,20 @@ data Bark = Loud | Quiet deriving (Eq, Ord)
 choosev :: Double -> a -> a -> parent -> Bayes parent a
 choosev prob left right parent =
     let probs = [(prob, left), (1 - prob, right)]
-        choices = weighted probs
+        choices = weightedObserv probs
     in
-         bindObserv (returnLatent parent) (\_ _ -> choices)
+         bindObserv (returnLatent parent) (\_ -> choices)
 
-family :: Bayes Family Family
-family = weighted [(0.8,Home), (0.2,Away)]
+family :: Bayes Family ()
+family = weightedLatent [(0.8,Home), (0.2,Away)]
 
-sick :: Bayes Sick Sick
+sick :: Bayes Sick ()
 sick = undefined
 
 
 light :: Family -> Bayes Family Light
-light fam = choosev (lookupError lightTable fam) On Off fam
+light Home = choosev 0.95 On Off Home
+light Away = choosev 0.3 On Off Away
 dog :: (Sick, Family) -> Bayes (Sick, Family) Dog
 dog = undefined
 bark :: Dog -> Bayes Dog Bark
@@ -32,15 +33,15 @@ bark = undefined
 network :: Bayes (Sick, Family) (Bark, Light)
 network =
     let lightNode :: Bayes Family Light
-        lightNode = bindTransform family (\_ obs -> light obs)
+        lightNode = bindObserv family (\lat -> light lat)
         dogNode :: Bayes (Sick, Family) Dog
-        dogNode = bindTransform (joint sick family) (\_ sickFamily -> dog sickFamily)
+        dogNode = bindObserv (joint sick family) (\sickFamily -> dog sickFamily)
         barkNode :: Bayes Dog Bark
         barkNode = bindTransform dogNode (\_ obs -> bark obs)
         exitNodes :: Bayes (Dog, Family) (Bark, Light)
         exitNodes = joint barkNode lightNode
     in
-        bindObserv dogNode (\_ _ -> exitNodes)
+        bindObserv dogNode (\_ -> exitNodes)
 
 -- light : On, Bark : Quiet
 observations :: ((Bark, Light) -> Bool) -> Bayes (Sick, Family) (Bark, Light)

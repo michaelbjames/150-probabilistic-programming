@@ -9,6 +9,10 @@ dieToDistribution :: Die -> Distribution Int
 dieToDistribution (Die 10) = equally [0..9]
 dieToDistribution (Die n) = equally [1..n]
 
+isSorted :: Ord a => [a] -> Bool
+isSorted (l:r:as) = if (l >= r) then isSorted (r:as) else False
+isSorted _ = True
+
 bagDistribution :: Distribution Die
 bagDistribution =
     equally . foldr (++) [] $
@@ -19,10 +23,6 @@ bagDistribution =
         , replicate 17 $ Die 12
         , replicate 17 $ Die 20
         ]
-
-isSorted :: Ord a => [a] -> Bool
-isSorted (l:r:as) = if (l >= r) then isSorted (r:as) else False
-isSorted _ = True
 
 drawThree :: Distribution [Die]
 drawThree = do

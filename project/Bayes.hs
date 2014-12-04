@@ -13,18 +13,18 @@ Is this a backdoor
 spawn :: lat -> obs -> Bayes lat obs
 spawn = undefined
 
-
 returnLatent :: lat -> Bayes lat ()
 returnLatent = undefined
 
 returnObserv :: obs -> Bayes () obs
 returnObserv = undefined
 
-{-
-Good for Bayes Nets
--}
-weighted :: [(Double, a)] -> Bayes a a
-weighted = undefined
+
+weightedLatent :: [(Double, lat)] -> Bayes lat ()
+weightedLatent = undefined
+
+weightedObserv :: [(Double, obs)] -> Bayes () obs
+weightedObserv = undefined
 
 
 equallyLatent :: [lat] -> Bayes lat ()
@@ -57,13 +57,13 @@ probabilityOf = undefined
 DiePattern : rollDice
 BayesNetwork : choosev
 -}
-bindObserv :: Bayes lat obs -> (lat -> obs -> Bayes z o) -> Bayes lat o
+bindObserv :: Bayes lat obs -> (lat -> Bayes z o) -> Bayes lat o
 bindObserv = undefined
 
 {- Used:
 DiePattern : draw3
 -}
-bindLatent :: Bayes lat obs -> (lat -> obs -> Bayes l z) -> Bayes l obs
+bindLatent :: Bayes lat obs -> (lat -> Bayes l z) -> Bayes l obs
 bindLatent = undefined
 
 {-
@@ -87,6 +87,9 @@ This is a combination of bindObserv and bindLatent
 joint :: Bayes lat1 obs1 -> Bayes lat2 obs2 -> Bayes (lat1,lat2) (obs1,obs2)
 joint = undefined
 
+merge :: Bayes lat obs -> Bayes lat obs -> Bayes lat obs
+merge = undefined
+
 
 ------------------------------------------------------
 ---------------------- REJECTED ----------------------
@@ -98,6 +101,12 @@ This seems like another back door though.
 -}
 equally :: [a] -> Bayes a a
 equally = undefined
+
+{-
+Good for Bayes Nets
+-}
+weighted :: [(Double, a)] -> Bayes a a
+weighted = undefined
 
 doubleMap :: (lat -> a) -> (obs -> b) -> Bayes lat obs -> Bayes a b
 doubleMap = undefined
