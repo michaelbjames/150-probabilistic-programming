@@ -69,7 +69,7 @@ bindL = undefined
 {-
 BayesNetwork : network
 -}
-bindT :: Bayes lat obs -> (lat -> obs -> Bayes obs newobs) -> Bayes obs newobs
+bindT :: Bayes lat obs -> (obs -> Bayes obs newobs) -> Bayes (lat,obs) newobs
 bindT = undefined
 
 

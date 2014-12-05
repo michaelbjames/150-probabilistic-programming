@@ -36,9 +36,9 @@ network =
         lightNode = bindO family (\lat -> light lat)
         dogNode :: Bayes (Sick, Family) Dog
         dogNode = bindO (joint sick family) (\sickFamily -> dog sickFamily)
-        barkNode :: Bayes Dog Bark
+        barkNode :: Bayes ((Sick, Family), Dog) Bark
         barkNode = bindT dogNode (\_ obs -> bark obs)
-        exitNodes :: Bayes (Dog, Family) (Bark, Light)
+        exitNodes :: Bayes (((Sick, Family), Dog), Family) (Bark, Light)
         exitNodes = joint barkNode lightNode
     in
         bindO dogNode (\_ -> exitNodes)
