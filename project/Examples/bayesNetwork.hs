@@ -17,10 +17,8 @@ choosev prob left right parent =
 
 family :: Bayes Family ()
 family = weightedL [(0.8,Home), (0.2,Away)]
-
 sick :: Bayes Sick ()
 sick = undefined
-
 
 light :: Family -> Bayes Family Light
 light Home = choosev 0.95 On Off Home
@@ -30,31 +28,26 @@ dog = undefined
 bark :: Dog -> Bayes Dog Bark
 bark = undefined
 
-network :: Bayes (Sick, Family) (Bark, Light)
+
+network :: Bayes Family (Bark, Light)
 network =
-    let lightNode :: Bayes Family Light
-        lightNode = bindO family (\lat -> light lat)
+    let 
         dogNode :: Bayes (Sick, Family) Dog
-        dogNode = bindO (joint sick family) (\sickFamily -> dog sickFamily)
-        barkNode :: Bayes ((Sick, Family), Dog) Bark
-        barkNode = bindT dogNode (\_ obs -> bark obs)
-        exitNodes :: Bayes (((Sick, Family), Dog), Family) (Bark, Light)
-        exitNodes = joint barkNode lightNode
+        dogNode = bindO (joint sick family) dog
+        barkNode :: Bayes (Sick, Family) Bark
+        barkNode = bindC dogNode bark
+        lightNode :: Bayes (Sick, Family) Light
+        lightNode = bindO barkNode (light . snd)
+        exitNodes :: Bayes (Sick, Family) (Bark, Light)
+        exitNodes = mergeO barkNode lightNode
     in
-        bindO dogNode (\_ -> exitNodes)
+        bindL exitNodes (returnL . snd)
 
 -- light : On, Bark : Quiet
-observations :: ((Bark, Light) -> Bool) -> Bayes (Sick, Family) (Bark, Light)
-observations = undefined
+observations :: ((Bark, Light) -> Bool) -> Bayes Family (Bark, Light)
+observations = flip bfilter network
 
-query :: ((Sick, Family) -> Bool) -> Bayes (Sick, Family) (Bark, Light)
-query = undefined
+query :: (Family -> Bool) -> Bayes Family (Bark, Light) -> Double
+query = probabilityOf
 
-{-
-Notice that the Dog being In or Out is not accessible in the model
--}
 
-lookupError :: Map k v -> k -> v
-lookupError = undefined
-lightTable :: Map Family Double
-lightTable = undefined

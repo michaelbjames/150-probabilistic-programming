@@ -16,6 +16,9 @@ draw3 bag =
     bindL bag (\d3 ->
         returnL [d1, d2, d3] )))
 
+rollDice :: Bayes [Die] () -> Bayes [Die] [Int]
+rollDice draw = bindO draw (\die -> bsequence (map roll die))
+
 -- formerly Dist [(Die, Int)]
 roll :: Die -> Bayes Die Int
 roll myDie = bindO (returnL myDie) myRoll
@@ -23,9 +26,6 @@ roll myDie = bindO (returnL myDie) myRoll
         myRoll :: Die -> Bayes () Int
         myRoll (D 10) = equallyO [0..9]
         myRoll (D n) = equallyO [1..n]
-
-rollDice :: Bayes [Die] () -> Bayes [Die] [Int]
-rollDice draw = bindO draw (\die -> bsequence (map roll die))
 
 matchCriteria :: Bayes [Die] [Int] -> Bayes [Die] [Int]
 matchCriteria = bfilter criteria

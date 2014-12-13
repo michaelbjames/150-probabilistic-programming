@@ -69,10 +69,8 @@ bindL = undefined
 {-
 BayesNetwork : network
 -}
-bindT :: Bayes lat obs -> (obs -> Bayes obs newobs) -> Bayes (lat,obs) newobs
-bindT = undefined
-
-
+bindC :: Bayes lat obs -> (obs -> Bayes obs newobs) -> Bayes lat newobs
+bindC = undefined
 
 {-
 DiePattern : rollDice
@@ -87,11 +85,11 @@ This is a combination of bindO and bindL
 joint :: Bayes lat1 obs1 -> Bayes lat2 obs2 -> Bayes (lat1,lat2) (obs1,obs2)
 joint = undefined
 
-merge :: Bayes lat obs -> Bayes lat obs -> Bayes lat obs
-merge = undefined
+mergeO :: Bayes lat obs1 -> Bayes lat obs2 -> Bayes lat (obs1,ob2)
+mergeO = undefined
 
 expectationMax :: Bayes lat obs -> Bayes prior lat -> Bayes lat obs
-
+expectationMax = undefined
 
 ------------------------------------------------------
 ---------------------- REJECTED ----------------------
