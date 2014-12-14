@@ -21,64 +21,63 @@ returnO :: obs -> Bayes () obs
 returnO o = return ((),o)
 
 
-weightedL :: [(Double, lat)] -> Bayes lat ()
-weightedL = undefined
+weightedL :: Ord lat => [(Double, lat)] -> Bayes lat ()
+weightedL xs = fmap (\x -> (x,())) (MPM.weighted xs)
 
-weightedO :: [(Double, obs)] -> Bayes () obs
-weightedO = undefined
-
-
-equallyL :: [lat] -> Bayes lat ()
-equallyL = undefined
-
-equallyO :: [obs] -> Bayes () obs
-equallyO = undefined
+weightedO :: Ord obs => [(Double, obs)] -> Bayes () obs
+weightedO xs = fmap (\x -> ((),x)) (MPM.weighted xs)
 
 
-mapO :: (obs -> b) -> Bayes lat obs -> Bayes lat b
-mapO = undefined
+equallyL :: Ord lat => [lat] -> Bayes lat ()
+equallyL ls = fmap (\x -> (x,())) (MPM.equally ls)
 
-mapL :: (lat -> a) -> Bayes lat obs -> Bayes a obs
-mapL = undefined
+equallyO :: Ord obs => [obs] -> Bayes () obs
+equallyO os = fmap (\x -> ((),x)) (MPM.equally os)
 
 
 {-
 DiePattern : matchCriteria
 -}
 bfilter :: (obs -> Bool) -> Bayes lat obs -> Bayes lat obs
-bfilter = undefined
+bfilter pred = MPM.pfilter (\(_,obs) -> pred obs)
 
 {-
 DiePattern : desiredDieProbability
 -}
-probabilityOf :: (lat -> Bool) -> Bayes lat obs -> Double
-probabilityOf = undefined
+probabilityOf :: (Ord lat, Ord obs) => (lat -> Bool) -> Bayes lat obs -> Double
+probabilityOf pred = MPM.probabilityOf (\(lat,_) -> pred lat)
 
 {-
 this appears to just make a simple distribution from the latent variable
 then mix it in.
 -}
-bindO :: Bayes lat obs -> (lat -> Bayes z o) -> Bayes lat o
-bindO = undefined
+bindO :: Bayes lat obs -> (lat -> obs -> Bayes z o) -> Bayes lat o
+bindO b f = b >>= (\(lat, obs) -> fmap (\(l,o) -> (lat,o)) (f lat obs))
 
 {- Used:
 DiePattern : draw3
 -}
-bindL :: Bayes lat obs -> (lat -> Bayes l z) -> Bayes l obs
-bindL = undefined
+bindL :: Bayes lat obs -> (lat -> obs -> Bayes l z) -> Bayes l obs
+bindL b f = b >>= (\(lat, obs) -> fmap (\(l,o) -> (l,obs)) (f lat obs))
 
 {-
 BayesNetwork : network
 -}
-bindC :: Bayes lat obs -> (obs -> Bayes obs newobs) -> Bayes lat newobs
-bindC = undefined
+bindC :: Bayes lat obs -> (lat -> obs -> Bayes obs newobs) -> Bayes lat newobs
+bindC b f = b >>= (\(lat, obs) -> fmap (\(o,newo) -> (lat,newo)) (f lat obs))
 
 {-
 DiePattern : rollDice
 Notes: It would be better if it were a set of Bayes to a Bayes of sets
 -}
 bsequence :: [Bayes lat obs] -> Bayes [lat] [obs]
-bsequence = undefined
+bsequence bs =
+    let
+        listPairs = sequence bs
+        accumulator :: [(lat, obs)] -> ([lat],[obs])
+        accumulator = foldr (\(l,o) (ls,os) -> (l:ls, o:os)) ([],[])
+    in
+        fmap accumulator listPairs
 
 {-
 This is a combination of bindO and bindL
@@ -88,9 +87,6 @@ joint = undefined
 
 mergeO :: Bayes lat obs1 -> Bayes lat obs2 -> Bayes lat (obs1,ob2)
 mergeO = undefined
-
-expectationMax :: Bayes lat obs -> Bayes prior lat -> Bayes lat obs
-expectationMax = undefined
 
 ------------------------------------------------------
 ---------------------- REJECTED ----------------------

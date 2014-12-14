@@ -32,6 +32,9 @@ equally as =
     in
         regroup . P $ list
 
+weighted :: Ord a => [(Double, a)] -> Dist a
+weighted as = regroup . P $ map (\(l,r) -> (r,l)) as
+
 probabilityOf :: Ord a => (a -> Bool) -> Dist a -> Double
 probabilityOf predicate (P dist) =
     foldr ((+) . snd) 0 $ filter (predicate . fst) dist
