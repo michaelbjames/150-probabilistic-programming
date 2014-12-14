@@ -1,23 +1,24 @@
 module Bayes where
 
+import qualified MyPMonad as MPM
 
 {-
 The latent variable is the hidden model on which we will query for a probability
 The observable variable are the features that we see and thus can filter on.
 -}
-data Bayes latent observable = B
+type Bayes latent observable = MPM.Dist (latent, observable)
 
 {-
 Is this a backdoor
 -}
 spawn :: lat -> obs -> Bayes lat obs
-spawn = undefined
+spawn l o = return (l,o)
 
 returnL :: lat -> Bayes lat ()
-returnL = undefined
+returnL l = return (l,())
 
 returnO :: obs -> Bayes () obs
-returnO = undefined
+returnO o = return ((),o)
 
 
 weightedL :: [(Double, lat)] -> Bayes lat ()
