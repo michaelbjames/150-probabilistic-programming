@@ -8,25 +8,25 @@ data Dog = In | Out deriving (Eq, Ord)
 data Sick = Sick | Healthy deriving (Eq, Ord)
 data Bark = Loud | Quiet deriving (Eq, Ord)
 
-choosev :: Double -> a -> a -> parent -> Bayes parent a
+choosev :: Ord a => Double -> a -> a -> parent -> Bayes parent a
 choosev prob left right parent =
     let probs = [(prob, left), (1 - prob, right)]
         choices = weightedO probs
     in
-        bindO (returnL parent) (\_ -> choices)
+        bindO (returnL parent) (\_ _ -> choices)
 
 family :: Bayes Family ()
 family = weightedL [(0.8,Home), (0.2,Away)]
 sick :: Bayes Sick ()
 sick = undefined
 
-light :: Family -> Bayes Family Light
-light Home = choosev 0.95 On Off Home
-light Away = choosev 0.3 On Off Away
-dog :: (Sick, Family) -> Bayes (Sick, Family) Dog
-dog = undefined
-bark :: Dog -> Bayes Dog Bark
-bark = undefined
+light :: Family -> a -> Bayes Family Light
+light Home _ = choosev 0.95 On Off Home
+light Away _ = choosev 0.3 On Off Away
+dog :: (Sick, Family) -> a -> Bayes (Sick, Family) Dog
+dog _ = undefined
+bark :: a -> Dog -> Bayes Dog Bark
+bark _ = undefined
 
 
 network :: Bayes Family (Bark, Light)
@@ -41,7 +41,7 @@ network =
         exitNodes :: Bayes (Sick, Family) (Bark, Light)
         exitNodes = mergeO barkNode lightNode
     in
-        bindL exitNodes (returnL . snd)
+        bindL exitNodes (\(_,fam) _ -> returnL fam)
 
 -- light : On, Bark : Quiet
 observations :: ((Bark, Light) -> Bool) -> Bayes Family (Bark, Light)
