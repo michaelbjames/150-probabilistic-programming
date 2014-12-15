@@ -1,0 +1,215 @@
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage{listings}
+\usepackage{float}
+
+\title{Type-directed Probability Queries}
+\author{Michael James}
+\date{\today}
+
+\begin{document}
+\maketitle
+\lstset{language=Haskell} 
+
+\begin{abstract}
+We often ask for useful information from a probability distribution in the form of, "What is the probability of X, given than I saw Y?" Questions of this form are applied to Bayesian networks, Hidden Markov Models, and other probabilistic inference problems. Can the underlying probability distribution abstraction better support this question form? Using a distribution type parameterized by two other types lifts this question to the type-level. Such a system improves readability and makes probabilistic programming easier to approach from a perspective of minimal knowledge. I present a rephrasing of a probability monad to a two-typed model.
+\end{abstract}
+
+\section{Introduction}
+\paragraph{Background: PMonad}
+Pfeffer and Ramsey discovered that probability distributions form a monad in 2002. Their discovery naturally led to a Haskell implementation. They made three subtyped monads for different kinds of queries on a probability distribution: a support monad, an expectation monad, and a sampling monad. The support monad provides the structure to ask a probability distribution for its support. The expectation monad allows the programmer to ask for the expected value of a distribution--and so it also asking for the event of highest probability. Finally the sampling monad gives the programmer the ability to draw stochastically from the distribution.
+
+Their work, which includes further contributions to the field, does lack two features that are present in later bodies of work in the field. Firstly, there is no way to express a continuous distribution in the implementation, though there is mention of how they work in the underlying measure-terms. Secondly, a \textit{posterior distribution} is inexpressible in both the monad and the measure-terms. Creating a new distribution based on some observed evidence is impossible. Making observations and determining a difference in probability between the prior and posterior distribution are required for a question beginning with "Given I saw Y..."
+
+\paragraph{Background: Modified PMonad}
+With prodding from Norman Ramsey, our probabilistic programming class came up with a probability monad. While it lacked the measure terms and underlying math, it did replicate many of the features of Pfeffer and Ramsey's 2002 probability monad. The class' representation of a probability monad included a way to query for the probability of an event and the support of a distribution. However, we devised a function to generate posterior distributions from observations. This function gave us the tools to turn distributions into a context for a question, such as "Given Y, which option should I choose among X, Z, and W?"
+
+\paragraph{Goals}
+There is a trick to probabilistic programming. The programmer must learn to see the uses of every variable. Is it hidden? Can it be observed? Do I care to learn its expected value? In simple type systems it can be challenging to keep track of which variables will be used for what task. Worse, it is possible to discard variables and discover after wasting several hours that the gone variables were actually required for a computation. This system wants to eliminate that trick by making the types clear. By raising this trick and its concerns to the type level, this system has potential to lower the barrier to entry on probabilistic programming and to make writing probabilistic programs faster. Many interesting questions lie in a conditional probability, so a system that encourages conditioning and querying on a posterior distribution will make the field easier to approach and can make many programs simply easier to understand.
+
+\section{Motivation}
+The probability monad and its modified cousin enable the programmer to make complex tools specific to a task. They provide basic functionality and little guidance about how to use them effectively. For a programmer new to probabilistic programming, the usage patterns of the probability monad is unclear.
+
+The following example is a simple game and a simple but not obvious question for the game. Suppose you have a bag of many kinds of dice (i.e, some 4, 6, 8, 10, 12, and 20 sided dice). A friend pulls three dice without showing you and rolls them. You are told that one of the dice landed on a 7, another on an 11, and the third is a multiple of 4. What is the probability one of those dice is an 8 sided die?
+
+Using a probability monad, with conditioning, the types flow as follows. The curious reader may find the full source on Github\footnote{github.com/michaelbjames/150-probabilistic-programming}.
+\begin{figure}[H]
+\begin{verbatim}
+bagDistribution :: Dist Die
+drawThree ::
+    Dist Die -> Dist [Die]
+rollThree ::
+    Dist [Die] ->
+    Dist ([Die], [Int])
+condition ::
+    ([Int] -> Bool) ->
+    Dist ([Die], [Int]) ->
+    Dist ([Die], [Int])
+probability ::
+    ([Die] -> Bool) ->
+    Dist ([Die], [Int]) ->
+    Double
+\end{verbatim}
+\caption{Type overview of PMonad usage}
+\end{figure}
+
+First the programmer specifies the distribution of dice in the bag. The next step is pick three dice from the bag (with replacement for simplicity). \texttt{rollThree} takes the three dice and rolls each one, making a distribution of a list of dice and the numbers each dice rolled. Next, the \texttt{condition} function makes a posterior distribution based on an observation function that operates only on the numbers rolled. Finally, the programmer can ask for the probability based on the dice that were drawn from the bag.
+
+The distribution monad \texttt{Dist} carries all the information about the drawn dice and the rolled numbers. These two values play different roles in the program, yet they are stuffed into the same type bag. In larger examples, the tuple of \texttt{([Die],[Int])} grows larger and larger with more variables. The type grows more and more complex, making the probabilistic systems they generate harder to reason about.
+
+\section{Two Parameters}
+The two types in the tuples in Figure 1 are used for separate functions in the overall structure of the program. The first is a hidden variable, the \texttt{[Die]} are never observed but are queried for a given event's probability. Meanwhile, the second type is directly observed. To make these purposes clearer, this paper raises them to the type level in a new type constructor: \texttt{Bayes lat obs}.
+
+This \texttt{Bayes} constructor requires two types to be saturated. The \texttt{lat} type variable is the latent variable in a probability distribution. The programmer would query this type for its probability. The \texttt{obs} type variable is the observable variable in a probability distribution. A posterior distribution results from conditioning the whole type \texttt{Bayes lat obs} on some value of the \texttt{obs} variable.
+
+\subsection{API highlights}
+For the ease of the user, there is a wall drawn between the latent and observable type variables. The translations between the two are restricted to a handful of functions to encourage a methodical and clear division of how a latent variable influences an observable variable and vice versa.
+
+\begin{figure}
+\begin{verbatim}
+returnO :: obs -> Bayes () obs
+returnL :: lat -> Bayes lat ()
+
+weightedO :: [(Double, obs)] -> Bayes () obs
+weightedL :: [(Double, lat)] -> Bayes lat ()
+
+bfilter ::
+    (obs -> Bool) ->
+    Bayes lat obs ->
+    Bayes lat obs
+
+bindO ::
+    Bayes lat obs ->
+    (lat -> obs -> Bayes a newobs) ->
+    Bayes lat newobs
+
+bindL ::
+    Bayes lat obs ->
+    (lat -> obs -> Bayes newlat a) ->
+    Bayes newlat obs
+
+bindC ::
+    Bayes lat obs ->
+    (lat -> obs -> Bayes obs newobs) ->
+    Bayes lat newobs
+
+probabilityOf ::
+    (lat -> Bool) ->
+    Bayes lat obs ->
+    Double
+    
+\end{verbatim}
+\caption{\texttt{Bayes} API highlights}
+\end{figure}
+Note that in binding functions, both the latent variables and the observable variables may influence the new type construction. This allows one to build complex Bayesian networks or other intricate probability systems.
+
+This API permits changing only one type variable at a time. Not only does this encourage easier to read code, but it also makes the implementation simpler.
+
+\subsection{The Underlying Probabilities}
+The \texttt{Bayes} construction intends to look closer to the probability distributions that are used in the problems the probability monad and this attempt to solve. At its core, a \texttt{Bayes lat obs} type is a conditional probability equivalent to $P(lat | obs)$.
+
+The \texttt{return} and \texttt{weighted} functions both produce simple unconditioned probability distributions. The \texttt{return} functions introduce a probability distribution with one element and probability, $p=1.0$ --it lifts a value into the distribution type. However the \texttt{weighted} functions create a more interesting distribution of $n$ elements with user-defined probabilities. These can then get mixed in to or combined with another probability distribution to make a conditioned distribution.
+
+The \texttt{bfilter} function creates a posterior distribution. Given a function that operates on a observable value to determine if a certain value, $v$, is observed, the \texttt{bfilter} function generates a conditional probability transformer. It takes a probability, $P(x | y)$ to the distribution $P(x | y = v)$.
+
+\section{Examples}
+\subsection{Motivation, revisited}
+The dice problem changes subtly with the \texttt{Bayes} type API. There is a distinct boundary between the observed variables and the queried variables. The full source is on Github\footnote{github.com/michaelbjames/150-probabilistic-programming}.
+\begin{figure}[H]
+\begin{verbatim}
+bag :: Bayes Die ()
+drawThree :: Bayes Die () -> Bayes [Die] ()
+rollDice ::
+    Bayes [Die] () -> Bayes [Die] [Int]
+condition ::
+    ([Int] -> Bool) ->
+    Bayes [Die] [Int] ->
+    Bayes [Die] [Int]
+probability ::
+    ([Die] -> Bool) ->
+    Bayes [Die] [Int] ->
+    Double
+\end{verbatim}
+\caption{\texttt{Bayes} usage over PMonad}
+\end{figure}
+Firstly, the way in which the prior distribution is set up differs from the setup of the probability monad. While both have conditional probabilities, the \texttt{Bayes} type shows visually shows the next major steps. The programmer constructs the bag but the type shows that nothing is observable yet. The dice are not meant to be observed so the programmer does not place them in the observable type variable. Throwing a die produces an observable value however, so that value is bound to the observable spot. This type clarity is harder to achieve using the probability monad.
+
+\subsection{Abstracting on Motivation}
+The dice world problem is from a subset of a larger class of probabilistic inference problems. Bayesian networks describe a large class of common and useful conditional probabilities. A Bayesian network is a directed acyclic graph where each node is a conditional probability. Depending on the situation, the programmer may have knowledge of some nodes and not others. They will also want to access the inferred probability of some other node.
+
+The following example comes from \textbf{CITATION}. Suppose there is a chance my family will be in or out of the house, independent of anything else in the model. Depending on whether or not the family is home, there are different probabilities of the lights in house being on or off. There is also a small chance the dog is sick, independent of everything else. Depending on whether the family is home and the dog is sick, he might or might not be outside. Further, if he is outside there is a chance he will bark. When I get home I want to know with what probability my family will also be home given that I see the lights on, and hear the dog bark.
+
+\begin{figure}[H]
+\begin{verbatim}
+family :: Bayes Family ()
+sick :: Bayes Sick ()
+light :: Family -> Bayes Family Light
+dog :: (Sick, Family) -> Bayes (Sick, Family) Dog
+bark :: Dog -> Bayes Dog Bark
+
+network :: Bayes Family (Bark, Light)
+
+observations ::
+    ((Bark, Light) -> Bool) ->
+    Bayes Family (Bark, Light)
+
+query ::
+    (Family -> Bool) ->
+    Bayes Family (Bark, Light) ->
+    Double
+\end{verbatim}
+\caption{A Bayesian network with the \texttt{Bayes} type}
+\end{figure}
+
+The insight on this example is in the type of the network as a whole. Based on the initial question of the problem, the variables and the types fit naturally together where they can or cannot be observed. The \texttt{Family} is the hidden variable that I want to know about but I can only observe the \texttt{(Bark, Light)} variables. The probability monad would have the type \texttt{Dist (Family, Bark, Light)}. There is no distinction between what the different variables do making the type and functions that use it less clear.
+
+\subsection{Learning Example}
+Mixture Model, Handwriting, Linear Regression
+
+\section{PMonad Compared}
+The \texttt{Bayes} type constructor and its supporting functions operate in a similar way to the probability monad. Their similarity is no coincidence. Given any program written in terms of \texttt{Bayes} types, an equivalent program exists using the probability monad with conditioning. The implementation of the \texttt{Bayes} type and its functions provide a mapping from itself to the probability monad with conditioning. A proof by implementation exists on Github\footnote{github.com/michaelbjames/150-probabilistic-programming}.
+
+\subsection{The Monad Within}
+The structural similarity of the \texttt{Bayes} family to the probability monad raises suspicions of the underlying mathematical structure of this type. In the current API state, there is no advantage in bestowing a similar monadic structure. The \texttt{Bayes} type comes very close but to constrict the type to a monad reduces functionality.
+
+To attempt to coerce this into a monad, we have to fix the first type parameter. So, let us suppose we are working with \texttt{Bayes lat} as the monadic type constructor (i.e., it takes one type parameter). Then we need the two functions that produce a monad: \texttt{return} and \texttt{bind}.
+\begin{verbatim}
+    return :: obs -> Bayes lat obs
+    bind ::
+        Bayes lat obs ->
+        (obs -> Bayes lat newobs) ->
+        Bayes lat newobs
+\end{verbatim}
+The \texttt{return} function still fits within the API design earlier. It generalizes the \texttt{returnO} function from Figure 2 allowing the latent variable to be of any type. The free type variable could be useful but error messages would get complicated as GHC barfs unnecessary type constraints on the user.
+
+Giving the \texttt{Bayes} type full monadic structure stops at the \texttt{bind} function. The binding function can only take one parameter; it can only depend on an observed variable. Yet, even the simple dice-world problems require binding on the hidden, latent variable. Such a bind function gives far less power to the user as only observed variables can influence observed variables.
+
+The \texttt{Bayes} type can be a monad but doing so trades Haskell syntactic sugar for expressive power. It is best not to convert the API to a monadic API in its current state.
+
+\section{Evaluation}
+It is the opinion of this author that the \texttt{Bayes} API is strictly easier to use than the probability monad with conditioning. As this paper contributes an API design, its success is a matter of reader's taste. Overall, types become clearer across the board. The types guide development, a missing variable is placed where it will be used, then actually using the variable to observe or query is trivial. The provided functions (particularly \texttt{bindC}) make it easy to hide variables that are neither observer nor queried.
+
+While the types become clearer, the code becomes more verbose compared to the probability monad with conditioning. What was once a succinct Haskell do-block becomes a let-in expression with long function names. Not having proper monadic functions precludes the \texttt{Bayes} from using Haskell's cleaner do-notation. However, a desugared probability monad looks similar and a tad more ugly--from complex pattern-matching--to the \texttt{Bayes} equivalent. The names of the supporting functions do what their names imply but a set of infix operators could clear up long line problems.
+
+\section{Future}
+\subsection{Notable Omission}
+Recent languages such as $\lambda_\circ$ (Park, Pfenning, and Thrun, 2008) and Fun (Borgström et al., 2011) feature everything in the probability monad and the \texttt{Bayes} system. However these other languages support continuous distributions. Distributions over the real numbers allow meaningful usage of probabilistic languages in areas such as machine learning. Discrete probability systems are limited by how many elements the programmer can enumerate. A future version of this API would need to support continuous distributions.
+
+\subsection{Three Parameters}
+Often times there are observed variables, queried variables, and also variables that fit into neither category. Figure 4's \texttt{dog} type is neither observed nor does the programmer care to know the dog's probability of being inside or outside. Perhaps there should be another parameter in the type constructor for this third type of variable. Perhaps something like:
+\begin{verbatim}
+    Bayes unk lat obs
+\end{verbatim}
+Such an API would be more complicated as there would need to be more supporting functions to manipulate the various possible interactions between the types.
+
+\subsection{Combinator Library}
+Much of the action in the field of probabilistic programming languages lies in relating programming systems and structures to their most fundamental layers of mathematics. Particularly, relating language designs to measure terms and measure transformers. Most simply, a measure is a way to talk about the size of a space. The probability monad team first came up with the terminology of measure terms which other groups expanded to functions that transform measure terms.
+
+There may be interesting contributions in searching for a pure and composable library of these measure transformers in the context of conditional probabilities. Each probability could be thought of as a measure term that are strung together with measure transformer combinators. This is distant work compared to the other two future features.
+
+\section{Acknowledgments}
+Thank you to Norman Ramsey for instructing the Fall 2014 Probabilistic Programming Languages course and guiding us through the tall forest of this field. Thanks to the visitors of the presentation who provided valuable feedback for the production of this paper.
+
+\section{References}
+
+\end{document}
