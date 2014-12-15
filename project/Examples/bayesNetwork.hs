@@ -13,7 +13,7 @@ choosev prob left right parent =
     let probs = [(prob, left), (1 - prob, right)]
         choices = weightedO probs
     in
-         bindO (returnL parent) (\_ -> choices)
+        bindO (returnL parent) (\_ -> choices)
 
 family :: Bayes Family ()
 family = weightedL [(0.8,Home), (0.2,Away)]
